@@ -279,7 +279,7 @@ The interface focuses on simplicity, emotional comfort, and distraction-free lis
 * Playlist Screen
 * Music Player Screen
 
-(Add screenshots here after UI completion)
+
 
 ---
 
