@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -6,342 +6,343 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
-  useWindowDimensions,
   FlatList,
+  Dimensions,
 } from "react-native";
-import { TabView, SceneMap, TabBar } from "react-native-tab-view";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { COLORS, SPACING, BORDER_RADIUS } from "../constants/theme";
+import { MOCK_SONGS, MOCK_ARTISTS } from "../constants/mockData";
 import SongCard from "../components/SongCard";
 import ArtistCard from "../components/ArtistCard";
 
-const SectionHeader = ({ title }) => (
-  <View style={styles.sectionHeader}>
-    <Text style={styles.sectionTitle}>{title}</Text>
-    <TouchableOpacity>
-      <Text style={styles.seeAll}>See All</Text>
-    </TouchableOpacity>
-  </View>
-);
+const { width } = Dimensions.get("window");
 
-import { getTrendingSongs, getTrendingArtists } from "../services/api";
-import { usePlayerStore } from "../store/usePlayerStore";
+const HomeScreen = ({ navigation }) => {
+  const trendingSongs = MOCK_SONGS.slice(0, 3);
+  const topArtists = MOCK_ARTISTS;
 
-const decodeHtmlEntities = (text) => {
-  if (!text) return "";
-  return text.replace(/&quot;/g, '"')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&#039;/g, "'");
-};
-
-const getImage = (images) => {
-  if (!images) return "https://picsum.photos/150";
-  if (typeof images === 'string') return images;
-  if (Array.isArray(images)) {
-    
-    const highQuality = images.find(img => img.quality === "500x500") || images[images.length - 1];
-    return highQuality?.url || highQuality?.link || images[0]?.url || images[0]?.link;
-  }
-  return "https://picsum.photos/150";
-};
-
-const getArtistName = (item) => {
-  if (item.primaryArtists) return item.primaryArtists;
-  if (item.artist) return item.artist;
-  if (item.artists && item.artists.primary && item.artists.primary.length > 0) {
-    return item.artists.primary[0].name;
-  }
-  return "Unknown Artist";
-};
-
-const getAudioUrl = (downloadUrl) => {
-  if (!downloadUrl) return null;
-  if (typeof downloadUrl === 'string') return downloadUrl;
-  if (Array.isArray(downloadUrl)) {
-    const target = downloadUrl.find(item => item.quality === "320kbps");
-    return target ? target.url : downloadUrl[downloadUrl.length - 1]?.url;
-  }
-  return null;
-};
-
-const SuggestedRoute = ({ navigation }) => {
-  const [trendingSongs, setTrendingSongs] = useState([]);
-  const [artists, setArtists] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  React.useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [songsData, artistsData] = await Promise.all([
-          getTrendingSongs("hindi"),
-          getTrendingArtists()
-        ]);
-        const songs = songsData?.results || songsData || [];
-        const artists = artistsData?.results || artistsData || [];
-
-        setTrendingSongs(Array.isArray(songs) ? songs : []);
-        setArtists(Array.isArray(artists) ? artists : []);
-      } catch (error) {
-        console.error("Error fetching home data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  return (
-    <ScrollView style={styles.tabContainer}>
-      <SectionHeader title="Trending Songs" />
-      <FlatList
-        horizontal
-        data={trendingSongs}
-        renderItem={({ item }) => (
-          <View style={{ width: 160, marginRight: 10 }}>
-            <SongCard
-              song={{
-                title: decodeHtmlEntities(item.name),
-                artist: decodeHtmlEntities(getArtistName(item)),
-                image: getImage(item.image),
-              }}
-              onPress={() => navigation.navigate("Player", {
-                song: {
-                  title: decodeHtmlEntities(item.name),
-                  artist: decodeHtmlEntities(getArtistName(item)),
-                  image: getImage(item.image),
-                  uri: getAudioUrl(item.downloadUrl)
-                }
-              })}
-              onPlay={() => {
-                const track = {
-                  id: item.id,
-                  title: decodeHtmlEntities(item.name),
-                  artist: decodeHtmlEntities(getArtistName(item)),
-                  image: getImage(item.image),
-                  uri: getAudioUrl(item.downloadUrl)
-                };
-                usePlayerStore.getState().playTrack(track);
-              }}
-            />
-          </View>
-        )}
-        keyExtractor={(item) => item.id}
-        showsHorizontalScrollIndicator={false}
-      />
-
-      <SectionHeader title="Top Artists" />
-      <FlatList
-        horizontal
-        data={artists}
-        renderItem={({ item }) => (
-          <ArtistCard
-            artist={{
-              name: decodeHtmlEntities(item.name),
-              image: getImage(item.image),
-            }}
-            onPress={() => navigation.navigate("ArtistDetails", {
-              artist: {
-                name: decodeHtmlEntities(item.name),
-                image: getImage(item.image),
-              }
-            })}
-          />
-        )}
-        keyExtractor={(item) => item.id}
-        showsHorizontalScrollIndicator={false}
-      />
-
-      <View style={{ height: 100 }} />
-    </ScrollView>
-  );
-};
-
-const SongsRoute = ({ navigation }) => {
-  const [songs, setSongs] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  React.useEffect(() => {
-    const fetchSongs = async () => {
-      try {
-        const data = await getTrendingSongs("english");
-        const results = data?.results || data || [];
-        setSongs(Array.isArray(results) ? results : []);
-      } catch (error) {
-        console.error("Error fetching songs tab:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchSongs();
-  }, []);
-
-  return (
-    <ScrollView style={styles.tabContainer}>
-      {songs.map((item, index) => (
-        <View key={item.id || index} style={{ marginBottom: 10 }}>
-          <SongCard
-            song={{
-              title: decodeHtmlEntities(item.name || item.title),
-              artist: decodeHtmlEntities(getArtistName(item)),
-              image: getImage(item.image),
-            }}
-            onPress={() => navigation.navigate("Player", {
-              song: {
-                title: decodeHtmlEntities(item.name || item.title),
-                artist: decodeHtmlEntities(getArtistName(item)),
-                image: getImage(item.image),
-                uri: getAudioUrl(item.downloadUrl)
-              }
-            })}
-            onPlay={() => {
-              const track = {
-                id: item.id,
-                title: decodeHtmlEntities(item.name || item.title),
-                artist: decodeHtmlEntities(getArtistName(item)),
-                image: getImage(item.image),
-                uri: getAudioUrl(item.downloadUrl)
-              };
-              usePlayerStore.getState().playTrack(track);
-            }}
-          />
-        </View>
-      ))}
-      <View style={{ height: 100 }} />
-    </ScrollView>
-  );
-};
-
-const ArtistsRoute = ({ navigation }) => {
-  const [artists, setArtists] = useState([]);
-
-  React.useEffect(() => {
-    const fetchArtists = async () => {
-      try {
-        const data = await getTrendingArtists();
-        const results = data?.results || data || [];
-        setArtists(Array.isArray(results) ? results : []);
-      } catch (error) {
-        console.error("Error fetching artists tab:", error);
-      }
-    };
-    fetchArtists();
-  }, []);
-
-  return (
-    <ScrollView style={styles.tabContainer}>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-        {artists.map((item, index) => (
-          <View key={item.id || index} style={{ width: '48%', marginBottom: 15 }}>
-            <ArtistCard
-              artist={{
-                name: decodeHtmlEntities(item.name),
-                image: getImage(item.image),
-              }}
-              onPress={() => navigation.navigate("ArtistDetails", {
-                artist: {
-                  name: decodeHtmlEntities(item.name),
-                  image: getImage(item.image),
-                }
-              })}
-            />
-          </View>
-        ))}
-      </View>
-      <View style={{ height: 100 }} />
-    </ScrollView>
-  );
-};
-
-// Placeholder for other tabs
-const OtherRoute = () => (
-  <View style={styles.tabContainer}>
-    <Text style={{ color: "#fff" }}>Coming Soon...</Text>
-  </View>
-);
-
-export default function HomeScreen({ navigation }) {
-  const layout = useWindowDimensions();
-  const [index, setIndex] = useState(0);
-  const [routes] = useState([
-    { key: "suggested", title: "Suggested" },
-    { key: "songs", title: "Songs" },
-    { key: "artists", title: "Artists" },
-  ]);
-
-  const renderScene = ({ route }) => {
-    switch (route.key) {
-      case "suggested":
-        return <SuggestedRoute navigation={navigation} />;
-      case "songs":
-        return <SongsRoute navigation={navigation} />;
-      case "artists":
-        return <ArtistsRoute navigation={navigation} />;
-      default:
-        return null;
-    }
+  const handlePlayTrack = (track) => {
+    navigation.navigate("Player", { track });
   };
 
   return (
-    <View style={styles.container}>
-      {/* Top App Bar */}
+    <SafeAreaView style={styles.container}>
+      {/* Top Header */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Ionicons name="musical-notes" size={28} color="#FF7000" />
-          <Text style={styles.brandName}>My Player</Text>
-        </View>
-        <TouchableOpacity onPress={() => navigation.navigate("Search")}>
-          <Ionicons name="search" size={24} color="#fff" />
+        <TouchableOpacity style={styles.headerBtn}>
+          <Ionicons name="menu-outline" size={24} color={COLORS.onSurface} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>The Parlor</Text>
+        <TouchableOpacity 
+          style={styles.headerBtn} 
+          onPress={() => navigation.navigate("Search")}
+        >
+          <Ionicons name="search-outline" size={24} color={COLORS.onSurface} />
         </TouchableOpacity>
       </View>
 
-      <TabView
-        navigationState={{ index, routes }}
-        renderScene={renderScene}
-        onIndexChange={setIndex}
-        initialLayout={{ width: layout.width }}
-        renderTabBar={(props) => (
-          <TabBar
-            {...props}
-            indicatorStyle={{ backgroundColor: "#FF7000", height: 3 }}
-            style={{ backgroundColor: "transparent", elevation: 0 }}
-            labelStyle={{ fontWeight: "bold", textTransform: "none" }}
-            activeColor="#FF7000"
-            inactiveColor="#666"
-            scrollEnabled={true}
-            tabStyle={{ width: "auto", paddingHorizontal: 20 }}
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Welcome Section */}
+        <View style={styles.welcomeSection}>
+          <Text style={styles.dateText}>The Evening of October 24</Text>
+          <Text style={styles.welcomeText}>Welcome back, Alex</Text>
+          <View style={styles.quoteDivider} />
+          <Text style={styles.quoteText}>"Music is the shorthand of emotion."</Text>
+          <Text style={styles.subtitleText}>A Sanctuary for Your Musical Soul</Text>
+        </View>
+
+        {/* Call to Action: Resonance Detection Card */}
+        <View style={styles.resonanceCard}>
+          <Text style={styles.resonanceTitle}>Music That Understands Your Vibe</Text>
+          <Text style={styles.resonanceDesc}>
+            Take a seat, breathe, and let us find the sounds that resonate with your inner world tonight. A private performance, just for you.
+          </Text>
+          <TouchableOpacity 
+            style={styles.resonanceBtn}
+            onPress={() => navigation.navigate("Mood")}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.resonanceBtnText}>Find My Resonance</Text>
+            <Ionicons name="sparkles" size={16} color={COLORS.onPrimary} style={{ marginLeft: 8 }} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Steps section */}
+        <View style={styles.stepsSection}>
+          <Text style={styles.sectionTitle}>The Artisanal Path</Text>
+          
+          <View style={styles.stepItem}>
+            <View style={styles.stepIconWrapper}>
+              <Ionicons name="ear-outline" size={20} color={COLORS.primary} />
+            </View>
+            <View style={styles.stepTextWrapper}>
+              <Text style={styles.stepNumber}>1. Listen</Text>
+              <Text style={styles.stepDesc}>
+                Share a whisper, a heartbeat, or simply the quiet of your room. We listen to the spaces between your words.
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.stepItem}>
+            <View style={styles.stepIconWrapper}>
+              <Ionicons name="heart-outline" size={20} color={COLORS.primary} />
+            </View>
+            <View style={styles.stepTextWrapper}>
+              <Text style={styles.stepNumber}>2. Feel</Text>
+              <Text style={styles.stepDesc}>
+                Our craft seeks the emotional resonance in every melody, aligning with the subtle nuances of your current heart-state.
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.stepItem}>
+            <View style={styles.stepIconWrapper}>
+              <Ionicons name="infinite-outline" size={20} color={COLORS.primary} />
+            </View>
+            <View style={styles.stepTextWrapper}>
+              <Text style={styles.stepNumber}>3. Connect</Text>
+              <Text style={styles.stepDesc}>
+                Receive a personalized, evolving soundscape that adapts to your journey and aligns with your creative flow.
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Trending Songs Section */}
+        <View style={styles.listSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.listTitle}>Trending Tracks</Text>
+            <TouchableOpacity onPress={() => navigation.navigate("Playlist")}>
+              <Text style={styles.seeAllText}>See All</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <FlatList
+            horizontal
+            data={trendingSongs}
+            keyExtractor={(item) => item.id}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.horizontalList}
+            renderItem={({ item }) => (
+              <View style={styles.songCardWrapper}>
+                <SongCard
+                  song={item}
+                  mode="vertical"
+                  onPress={() => handlePlayTrack(item)}
+                />
+              </View>
+            )}
           />
-        )}
-      />
-    </View>
+        </View>
+
+        {/* Top Artists Section */}
+        <View style={styles.listSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.listTitle}>Featured Artists</Text>
+          </View>
+          
+          <FlatList
+            horizontal
+            data={topArtists}
+            keyExtractor={(item) => item.id}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.horizontalList}
+            renderItem={({ item }) => (
+              <ArtistCard
+                artist={item}
+                onPress={() => navigation.navigate("ArtistDetails", { artist: item })}
+              />
+            )}
+          />
+        </View>
+
+        {/* Extra spacer for MiniPlayer padding */}
+        <View style={{ height: 100 }} />
+      </ScrollView>
+    </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#121212", paddingTop: 50 },
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
-    marginBottom: 10,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.surfaceContainer,
   },
-  headerLeft: { flexDirection: "row", alignItems: "center" },
-  brandName: {
-    color: "#fff",
-    fontSize: 24,
+  headerBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
+    color: COLORS.onSurface,
+    fontSize: 18,
     fontWeight: "bold",
-    marginLeft: 10,
+    letterSpacing: 0.5,
   },
-  tabContainer: { flex: 1, paddingHorizontal: 15 },
+  scrollContent: {
+    paddingBottom: SPACING.md,
+  },
+  welcomeSection: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
+  },
+  dateText: {
+    color: COLORS.primary,
+    fontSize: 14,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  welcomeText: {
+    color: COLORS.onSurface,
+    fontSize: 28,
+    fontWeight: "bold",
+    marginTop: 4,
+  },
+  quoteDivider: {
+    width: 40,
+    height: 2,
+    backgroundColor: COLORS.primaryContainer,
+    marginVertical: SPACING.sm,
+  },
+  quoteText: {
+    color: COLORS.onSurfaceVariant,
+    fontSize: 16,
+    fontStyle: "italic",
+    lineHeight: 24,
+  },
+  subtitleText: {
+    color: COLORS.secondary,
+    fontSize: 14,
+    fontWeight: "500",
+    marginTop: 4,
+  },
+  resonanceCard: {
+    marginHorizontal: SPACING.md,
+    marginVertical: SPACING.xs,
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.xl,
+    backgroundColor: COLORS.surfaceVariant,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+  },
+  resonanceTitle: {
+    color: COLORS.primary,
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: SPACING.xs,
+  },
+  resonanceDesc: {
+    color: COLORS.onSurfaceVariant,
+    fontSize: 14,
+    lineHeight: 22,
+    marginBottom: SPACING.sm,
+  },
+  resonanceBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.primary,
+    paddingVertical: 12,
+    borderRadius: BORDER_RADIUS.lg,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  resonanceBtnText: {
+    color: COLORS.onPrimary,
+    fontSize: 15,
+    fontWeight: "bold",
+  },
+  stepsSection: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
+    marginTop: SPACING.sm,
+  },
+  sectionTitle: {
+    color: COLORS.onSurface,
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: SPACING.sm,
+  },
+  stepItem: {
+    flexDirection: "row",
+    marginBottom: SPACING.sm,
+    backgroundColor: COLORS.surface,
+    padding: SPACING.sm,
+    borderRadius: BORDER_RADIUS.lg,
+    borderWidth: 1,
+    borderColor: COLORS.surfaceContainer,
+  },
+  stepIconWrapper: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.surfaceContainerHighest,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: SPACING.sm,
+  },
+  stepTextWrapper: {
+    flex: 1,
+  },
+  stepNumber: {
+    color: COLORS.secondary,
+    fontSize: 14,
+    fontWeight: "bold",
+    marginBottom: 2,
+  },
+  stepDesc: {
+    color: COLORS.onSurfaceVariant,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  listSection: {
+    marginTop: SPACING.sm,
+  },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 25,
-    marginBottom: 15,
+    paddingHorizontal: SPACING.md,
+    marginBottom: SPACING.xs,
   },
-  sectionTitle: { color: "#fff", fontSize: 18, fontWeight: "bold" },
-  seeAll: { color: "#FF7000", fontSize: 14, fontWeight: "600" },
+  listTitle: {
+    color: COLORS.onSurface,
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  seeAllText: {
+    color: COLORS.primary,
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  horizontalList: {
+    paddingLeft: SPACING.md,
+    paddingRight: SPACING.xs,
+  },
+  songCardWrapper: {
+    width: 150,
+    marginRight: SPACING.sm,
+  },
 });
+
+export default HomeScreen;
