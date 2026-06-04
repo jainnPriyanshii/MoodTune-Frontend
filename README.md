@@ -1,69 +1,328 @@
-﻿# MoodTune-Music App 
+﻿# 🎵 MoodTune
 
-A modern, feature-rich music player application built with **React Native** and **Expo**.
+### Music That Understands Your Mood
 
-## 🚀 Features
+MoodTune is an AI-powered music recommendation application that analyzes a user's emotional state through facial expressions and text input, then curates personalized music playlists based on the detected mood.
 
--   **Audio Playback**: Seamless audio streaming powered by `expo-av`.
--   **Search**: Find songs and artists using the integrated search feature (with auto-fetch for audio links).
--   **Player Controls**: Play, pause, skip, and seek functionality with a real-time progress slider.
--   **Mini Player**: Persistent mini player at the bottom of the screen for quick controls (auto-hides on full player).
--   **Library**:
-    -   **Favorites**: Like songs to add them to your collection.
-    -   **Playlists**: Create and manage custom playlists.
--   **Trending**: Browse trending songs and top artists on the home screen.
+The application combines Computer Vision, Natural Language Processing, and Music Recommendation techniques to create a personalized and emotionally aware listening experience.
 
-## 🛠 Tech Stack
+---
 
--   **Framework**: [React Native](https://reactnative.dev/) (Expo SDK 50+)
--   **State Management**: [Zustand](https://github.com/pmndrs/zustand) (with `persist` middleware for local storage)
--   **Navigation**: [React Navigation](https://reactnavigation.org/) (Stack & Bottom Tabs)
--   **Audio Engine**: [expo-av](https://docs.expo.dev/versions/latest/sdk/av/)
--   **UI Components**: `@react-native-community/slider`, `react-native-pager-view`, `react-native-safe-area-context`
--   **Icons**: `@expo/vector-icons`
+## ✨ Features
 
-## 📦 Installation
+### 🎭 Mood Detection
 
-1.  **Clone the repository**:
-    ```bash
-    git clone https://github.com/your-username/music-app.git
-    cd music-app
-    ```
+Detect emotions using:
 
-2.  **Install dependencies**:
-    ```bash
-    npm install
-    # or
-    yarn install
-    ```
+* Facial Expression Analysis
+* Text-Based Sentiment Analysis
+* Multi-Modal Mood Fusion
 
-3.  **Start the development server**:
-    ```bash
-    npm start
-    ```
+Supported emotions:
 
-4.  **Run on Device/Emulator**:
-    -   Press `a` for Android Emulator.
-    -   Press `i` for iOS Simulator.
-    -   Scan the QR code with the Expo Go app on your physical device.
+* Happy
+* Sad
+* Angry
+* Fear
+* Surprise
+* Disgust
+* Neutral
 
-##  Project Structure
+---
 
+### 🎵 Personalized Music Recommendations
+
+Generate playlists based on:
+
+* Detected Mood
+* Emotional Intensity
+* Mood Blending
+
+Examples:
+
+| Mood     | Playlist Style              |
+| -------- | --------------------------- |
+| Happy    | Feel-good Pop, Upbeat Hits  |
+| Sad      | Lo-fi, Emotional Ballads    |
+| Angry    | Rock, Intense Beats         |
+| Fear     | Calming Ambient Music       |
+| Surprise | Trending & Energetic Tracks |
+| Neutral  | Chill Instrumentals         |
+
+---
+
+### ☕ Cozy Listening Experience
+
+MoodTune is designed around a warm and calming aesthetic inspired by:
+
+* Coffee Shops
+* Reading Corners
+* Vinyl Music Cafés
+* Evening Ambience
+
+The goal is to create a comforting environment where users can relax and discover music that matches their emotions.
+
+---
+
+## 🏗️ System Architecture
+
+```text
+User
+ │
+ ▼
+React Native App
+ │
+ ├── Camera Input
+ ├── Text Input
+ │
+ ▼
+Flask Backend
+ │
+ ├── DeepFace
+ ├── HuggingFace Transformers
+ │
+ ▼
+Mood Fusion Engine
+ │
+ ▼
+Final Mood Prediction
+ │
+ ▼
+Music Recommendation Layer
+ │
+ ▼
+JioSaavn API
+ │
+ ▼
+Personalized Playlist
 ```
-/src
-  ├── components/    # Reusable UI components (SongCard, MiniPlayer, etc.)
-  ├── navigation/    # Navigation setup (AppNavigator)
-  ├── screens/       # Application screens (Home, Player, Search, Library)
-  ├── services/      # API and SoundService logic
-  ├── store/         # Zustand stores (usePlayerStore, useLibraryStore)
-App.js               # different entry point
-index.js             # Application entry point
+
+---
+
+## 📱 Application Flow
+
+```text
+Home Screen
+      │
+      ▼
+Mood Detection
+      │
+      ▼
+Emotion Analysis
+      │
+      ▼
+Playlist Generation
+      │
+      ▼
+Music Player
 ```
 
-## 📝 Notes
+---
 
--   **API**: The app uses a custom API endpoint (`saavn.sumit.co`) for fetching song data. Ensure you have internet connectivity.
--   **Asset Handling**: Images are processed to ensure high-quality thumbnails are displayed.
+## 🚀 Tech Stack
 
+### Frontend
 
+* React Native
+* Expo
+* React Navigation
+* Context API
+* AsyncStorage
+* Axios
 
+### Backend
+
+* Python
+* Flask
+* Flask-CORS
+
+### Machine Learning
+
+* DeepFace
+* HuggingFace Transformers
+* DistilRoBERTa Emotion Model
+
+### APIs
+
+* JioSaavn API
+
+---
+
+## 🧠 AI Pipeline
+
+### Face Emotion Detection
+
+MoodTune uses DeepFace to analyze facial expressions and extract emotion probabilities.
+
+Example:
+
+```json
+{
+  "happy": 72,
+  "sad": 10,
+  "neutral": 18
+}
+```
+
+---
+
+### Text Emotion Detection
+
+User text is analyzed using a pre-trained DistilRoBERTa model to identify emotional patterns.
+
+Example:
+
+Input:
+
+"I'm excited about tomorrow."
+
+Output:
+
+```json
+{
+  "joy": 0.84,
+  "surprise": 0.10,
+  "neutral": 0.06
+}
+```
+
+---
+
+### Mood Fusion
+
+MoodTune combines face and text signals using a confidence-weighted fusion strategy.
+
+Benefits:
+
+* More reliable predictions
+* Better handling of ambiguous emotions
+* Reduced dependence on a single input source
+
+---
+
+## 📂 Project Structure
+
+```text
+src
+│
+├── screens
+│   ├── HomeScreen
+│   ├── MoodDetectionScreen
+│   ├── PlaylistScreen
+│   └── PlayerScreen
+│
+├── components
+│   ├── MoodCard
+│   ├── SongCard
+│   ├── PrimaryButton
+│   └── LoadingOverlay
+│
+├── services
+│   ├── moodApi
+│   └── playlistApi
+│
+├── context
+│   └── MoodContext
+│
+├── navigation
+│   └── AppNavigator
+│
+├── constants
+│   ├── colors
+│   ├── spacing
+│   └── typography
+│
+└── utils
+```
+
+---
+
+## 🎨 Design Philosophy
+
+MoodTune follows a cozy and emotionally driven design language.
+
+Color Inspiration:
+
+* Espresso Brown
+* Coffee Beige
+* Warm Cream
+* Soft White
+
+Inspired By:
+
+* Coffee Shops ☕
+* Books 📖
+* Music 🎧
+* Evening Calm 🌙
+
+The interface focuses on simplicity, emotional comfort, and distraction-free listening.
+
+---
+
+## 🔮 Future Enhancements
+
+* Mood History Tracking
+* Personalized Recommendation Engine
+* User Favorites
+* Spotify Integration
+* Apple Music Integration
+* Mood Analytics Dashboard
+* Voice-Based Emotion Detection
+* Hybrid Recommendation System
+
+---
+
+## 📸 Screens
+
+* Home Screen
+* Mood Detection Screen
+* Playlist Screen
+* Music Player Screen
+
+(Add screenshots here after UI completion)
+
+---
+
+## ⚙️ Installation
+
+### Clone Repository
+
+```bash
+git clone https://github.com/your-username/MoodTune.git
+```
+
+### Navigate to Project
+
+```bash
+cd MoodTune
+```
+
+### Install Dependencies
+
+```bash
+npm install
+```
+
+### Start Expo
+
+```bash
+npx expo start
+```
+
+---
+
+## 👩‍💻 Author
+
+Priyanshi Jain
+
+B.Tech Computer Science & Artificial Intelligence
+
+Full Stack & React Native Developer
+
+Currently exploring Artificial Intelligence, Machine Learning, NLP, Vector Databases, and LLM Applications.
+
+---
+
+## 🌟 Project Goal
+
+MoodTune aims to bridge emotions and music by creating an intelligent listening experience where technology understands how users feel and recommends music that resonates with their emotional state.
