@@ -28,7 +28,7 @@ const SplashScreen = ({ navigation }) => {
       duration: 400,
       useNativeDriver: true,
     }).start(() => {
-      navigation.replace('MainTabs');
+      navigation.replace('Login');
     });
   };
 

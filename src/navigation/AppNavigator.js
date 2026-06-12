@@ -5,6 +5,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../constants/theme";
 
 import SplashScreen from "../screens/SplashScreen";
+import LoginScreen from "../screens/LoginScreen";
+import SignUpScreen from "../screens/SignUpScreen";
 import HomeScreen from "../screens/HomeScreen";
 import PlaylistScreen from "../screens/PlaylistScreen";
 import MoodDetectionScreen from "../screens/MoodDetectionScreen";
@@ -62,6 +64,16 @@ export default function AppNavigator() {
       <Stack.Screen
         name="Splash"
         component={SplashScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Login"
+        component={LoginScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="SignUp"
+        component={SignUpScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
