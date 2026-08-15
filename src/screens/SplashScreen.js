@@ -3,22 +3,27 @@ import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions } from '
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS, FONTS } from '../constants/theme';
+import { useAuth } from '../context/AuthContext';
 
 const { width } = Dimensions.get('window');
 
 const SplashScreen = ({ navigation }) => {
   const [progress] = useState(new Animated.Value(0));
-  const [showButton, setShowButton] = useState(false);
+  const [animDone, setAnimDone] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(1));
 
+  // Session is already resolved by AuthContext (loading=false by the time
+  // SplashScreen renders), so we just read it directly — no async call needed.
+  const { session } = useAuth();
+  const destination = session ? 'MainTabs' : 'Login';
+
   useEffect(() => {
-    // Animate progress bar
     Animated.timing(progress, {
       toValue: 1,
       duration: 2000,
       useNativeDriver: false,
     }).start(() => {
-      setShowButton(true);
+      setAnimDone(true);
     });
   }, []);
 
@@ -28,7 +33,7 @@ const SplashScreen = ({ navigation }) => {
       duration: 400,
       useNativeDriver: true,
     }).start(() => {
-      navigation.replace('Login');
+      navigation.replace(destination);
     });
   };
 
@@ -45,7 +50,6 @@ const SplashScreen = ({ navigation }) => {
 
         {/* Branding Group */}
         <View style={styles.brandContainer}>
-          {/* Logo representation */}
           <View style={styles.logoWrapper}>
             <View style={styles.logoCircleOuter}>
               <View style={styles.logoCircleInner}>
@@ -53,15 +57,13 @@ const SplashScreen = ({ navigation }) => {
               </View>
             </View>
           </View>
-
-          {/* Text branding */}
           <Text style={styles.title}>MoodTune</Text>
           <Text style={styles.subtitle}>Music for Every Mood</Text>
         </View>
 
         {/* Bottom indicator / Action */}
         <View style={styles.bottomContainer}>
-          {!showButton ? (
+          {!animDone ? (
             <View style={styles.loadingContainer}>
               <View style={styles.loadingBar}>
                 <Animated.View style={[styles.loadingFill, { width: progressWidth }]} />
@@ -70,7 +72,9 @@ const SplashScreen = ({ navigation }) => {
             </View>
           ) : (
             <TouchableOpacity style={styles.button} onPress={handleBegin} activeOpacity={0.8}>
-              <Text style={styles.buttonText}>Tap to Begin</Text>
+              <Text style={styles.buttonText}>
+                {destination === 'MainTabs' ? 'Continue Listening' : 'Tap to Begin'}
+              </Text>
               <View style={styles.buttonCircle}>
                 <Ionicons name="chevron-forward" size={18} color={COLORS.onPrimary} />
               </View>

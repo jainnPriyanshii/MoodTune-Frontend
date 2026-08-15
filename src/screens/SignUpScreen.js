@@ -9,10 +9,12 @@ import {
   Platform,
   ScrollView,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants/theme';
+import { supabase } from '../config/supabase';
 
 const { width } = Dimensions.get('window');
 
@@ -21,10 +23,67 @@ const SignUpScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSignUp = () => {
-    // Navigate directly into the main application tabs
-    navigation.replace('MainTabs');
+  const handleSignUp = async () => {
+    // Basic validation
+    if (!username.trim()) {
+      setError('Please enter a username.');
+      return;
+    }
+    if (!email.trim()) {
+      setError('Please enter your email address.');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+
+    setError('');
+    setLoading(true);
+
+    try {
+      // Sign up — email confirmation disabled on Supabase dashboard, so session is returned immediately
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          data: { username: username.trim() },
+          // Pass emailRedirectTo as undefined to avoid triggering email flow
+        },
+      });
+
+      if (signUpError) {
+        setError(signUpError.message || 'Sign up failed. Please try again.');
+        return;
+      }
+
+      // If session is immediately available, auto-login (email confirmation disabled)
+      if (data?.session) {
+        navigation.replace('MainTabs');
+        return;
+      }
+
+      // Fallback: try signing in immediately after signup
+      const { error: loginError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (loginError) {
+        // If auto-login fails redirect to login to let the user sign in manually
+        navigation.replace('Login');
+        return;
+      }
+
+      navigation.replace('MainTabs');
+    } catch (err) {
+      setError('Something went wrong. Please check your connection.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -51,6 +110,14 @@ const SignUpScreen = ({ navigation }) => {
             <Text style={styles.cardHeader}>Create Account</Text>
             <Text style={styles.cardSubheader}>Join our sanctuary for musical soul-searching</Text>
 
+            {/* Error Banner */}
+            {error ? (
+              <View style={styles.errorBanner}>
+                <Ionicons name="alert-circle-outline" size={16} color={COLORS.error} />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : null}
+
             {/* Input Username */}
             <View style={styles.inputLabelContainer}>
               <Text style={styles.inputLabel}>Username</Text>
@@ -62,7 +129,7 @@ const SignUpScreen = ({ navigation }) => {
                 placeholder="Choose a username"
                 placeholderTextColor={COLORS.outline}
                 value={username}
-                onChangeText={setUsername}
+                onChangeText={(v) => { setUsername(v); setError(''); }}
                 autoCapitalize="none"
               />
             </View>
@@ -79,7 +146,7 @@ const SignUpScreen = ({ navigation }) => {
                 placeholderTextColor={COLORS.outline}
                 keyboardType="email-address"
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(v) => { setEmail(v); setError(''); }}
                 autoCapitalize="none"
               />
             </View>
@@ -92,11 +159,11 @@ const SignUpScreen = ({ navigation }) => {
               <Ionicons name="lock-closed-outline" size={18} color={COLORS.outline} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Choose a strong password"
+                placeholder="Choose a strong password (min. 6 chars)"
                 placeholderTextColor={COLORS.outline}
                 secureTextEntry={!showPassword}
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(v) => { setPassword(v); setError(''); }}
                 autoCapitalize="none"
               />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
@@ -110,13 +177,22 @@ const SignUpScreen = ({ navigation }) => {
 
             {/* Signup Action Button */}
             <TouchableOpacity
-              style={styles.signUpBtn}
+              style={[styles.signUpBtn, loading && styles.btnDisabled]}
               onPress={handleSignUp}
               activeOpacity={0.8}
+              disabled={loading}
             >
-              <Text style={styles.signUpBtnText}>Create Account</Text>
+              {loading ? (
+                <ActivityIndicator size="small" color={COLORS.onPrimaryContainer} />
+              ) : (
+                <Text style={styles.signUpBtnText}>Create Account</Text>
+              )}
               <View style={styles.arrowIconWrapper}>
-                <Ionicons name="arrow-forward" size={16} color={COLORS.onPrimary} />
+                {loading ? (
+                  <ActivityIndicator size="small" color={COLORS.onPrimary} />
+                ) : (
+                  <Ionicons name="arrow-forward" size={16} color={COLORS.onPrimary} />
+                )}
               </View>
             </TouchableOpacity>
           </View>
@@ -192,6 +268,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginBottom: SPACING.sm,
   },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(186, 26, 26, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(186, 26, 26, 0.3)',
+    borderRadius: BORDER_RADIUS.md,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 10,
+    marginBottom: SPACING.sm,
+    gap: 8,
+  },
+  errorText: {
+    color: COLORS.error || '#BA1A1A',
+    fontSize: 12,
+    flex: 1,
+    lineHeight: 16,
+  },
   inputLabelContainer: {
     marginTop: SPACING.xs + 2,
     marginBottom: 6,
@@ -241,6 +335,9 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 3,
     marginTop: SPACING.sm,
+  },
+  btnDisabled: {
+    opacity: 0.7,
   },
   signUpBtnText: {
     color: COLORS.onPrimaryContainer,

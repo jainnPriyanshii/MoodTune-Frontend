@@ -15,12 +15,28 @@ import { COLORS, SPACING, BORDER_RADIUS } from "../constants/theme";
 import { MOCK_SONGS, MOCK_ARTISTS } from "../constants/mockData";
 import SongCard from "../components/SongCard";
 import ArtistCard from "../components/ArtistCard";
+import { useAuth } from "../context/AuthContext";
+
+// Returns a greeting based on the current hour
+function getTimeGreeting() {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return 'Good Morning';
+  if (hour >= 12 && hour < 17) return 'Good Afternoon';
+  if (hour >= 17 && hour < 21) return 'Good Evening';
+  return 'Good Night';
+}
 
 const { width } = Dimensions.get("window");
 
 const HomeScreen = ({ navigation }) => {
   const trendingSongs = MOCK_SONGS.slice(0, 3);
   const topArtists = MOCK_ARTISTS;
+
+  // Pull display name from AuthContext
+  const { user } = useAuth();
+  const meta = user?.user_metadata || {};
+  const displayName = meta.username || meta.full_name || user?.email?.split('@')[0] || 'there';
+  const greeting = getTimeGreeting();
 
   const handlePlayTrack = (track) => {
     navigation.navigate("Player", { track });
@@ -30,9 +46,7 @@ const HomeScreen = ({ navigation }) => {
     <SafeAreaView style={styles.container}>
       {/* Top Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.headerBtn}>
-          <Ionicons name="menu-outline" size={24} color={COLORS.onSurface} />
-        </TouchableOpacity>
+       
         <Text style={styles.headerTitle}>The Parlor</Text>
         <TouchableOpacity 
           style={styles.headerBtn} 
@@ -48,11 +62,10 @@ const HomeScreen = ({ navigation }) => {
       >
         {/* Welcome Section */}
         <View style={styles.welcomeSection}>
-          <Text style={styles.dateText}>The Evening of October 24</Text>
-          <Text style={styles.welcomeText}>Welcome back, Alex</Text>
+          <Text style={styles.dateText}>{greeting} ✦ MoodTune</Text>
+          <Text style={styles.welcomeText}>Welcome back, {displayName}</Text>
           <View style={styles.quoteDivider} />
-          <Text style={styles.quoteText}>"Music is the shorthand of emotion."</Text>
-          <Text style={styles.subtitleText}>A Sanctuary for Your Musical Soul</Text>
+         
         </View>
 
         {/* Call to Action: Resonance Detection Card */}

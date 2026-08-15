@@ -9,21 +9,51 @@ import {
   Platform,
   ScrollView,
   Dimensions,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants/theme';
+import { supabase } from '../config/supabase';
 
 const { width } = Dimensions.get('window');
 
 const LoginScreen = ({ navigation }) => {
-  const [identifier, setIdentifier] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleLogin = () => {
-    // Navigate to the main home interface on successful login
-    navigation.replace('MainTabs');
+  const handleLogin = async () => {
+    // Basic field validation
+    if (!email.trim() || !password.trim()) {
+      setError('Please enter your email and password.');
+      return;
+    }
+
+    setError('');
+    setLoading(true);
+
+    try {
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (authError) {
+        setError(authError.message || 'Login failed. Please try again.');
+        return;
+      }
+
+      // Success — navigate into the app
+      navigation.replace('MainTabs');
+    } catch (err) {
+      setError('Something went wrong. Please check your connection.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -50,19 +80,28 @@ const LoginScreen = ({ navigation }) => {
             <Text style={styles.cardHeader}>Welcome Back</Text>
             <Text style={styles.cardSubheader}>Log in to enter your personal acoustic parlor</Text>
 
-            {/* Input Username/Email */}
+            {/* Error Banner */}
+            {error ? (
+              <View style={styles.errorBanner}>
+                <Ionicons name="alert-circle-outline" size={16} color={COLORS.error} />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : null}
+
+            {/* Input Email */}
             <View style={styles.inputLabelContainer}>
-              <Text style={styles.inputLabel}>Username or Email</Text>
+              <Text style={styles.inputLabel}>Email Address</Text>
             </View>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="person-outline" size={18} color={COLORS.outline} style={styles.inputIcon} />
+            <View style={[styles.inputWrapper, error && !email ? styles.inputError : null]}>
+              <Ionicons name="mail-outline" size={18} color={COLORS.outline} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Enter username or email"
+                placeholder="Enter your email"
                 placeholderTextColor={COLORS.outline}
-                value={identifier}
-                onChangeText={setIdentifier}
+                value={email}
+                onChangeText={(v) => { setEmail(v); setError(''); }}
                 autoCapitalize="none"
+                keyboardType="email-address"
               />
             </View>
 
@@ -70,7 +109,7 @@ const LoginScreen = ({ navigation }) => {
             <View style={styles.inputLabelContainer}>
               <Text style={styles.inputLabel}>Password</Text>
             </View>
-            <View style={styles.inputWrapper}>
+            <View style={[styles.inputWrapper, error && !password ? styles.inputError : null]}>
               <Ionicons name="lock-closed-outline" size={18} color={COLORS.outline} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
@@ -78,7 +117,7 @@ const LoginScreen = ({ navigation }) => {
                 placeholderTextColor={COLORS.outline}
                 secureTextEntry={!showPassword}
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(v) => { setPassword(v); setError(''); }}
                 autoCapitalize="none"
               />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
@@ -97,13 +136,22 @@ const LoginScreen = ({ navigation }) => {
 
             {/* Login Action Button */}
             <TouchableOpacity
-              style={styles.loginBtn}
+              style={[styles.loginBtn, loading && styles.loginBtnDisabled]}
               onPress={handleLogin}
               activeOpacity={0.8}
+              disabled={loading}
             >
-              <Text style={styles.loginBtnText}>Log In</Text>
+              {loading ? (
+                <ActivityIndicator size="small" color={COLORS.onPrimaryContainer} />
+              ) : (
+                <Text style={styles.loginBtnText}>Log In</Text>
+              )}
               <View style={styles.arrowIconWrapper}>
-                <Ionicons name="arrow-forward" size={16} color={COLORS.onPrimary} />
+                {loading ? (
+                  <ActivityIndicator size="small" color={COLORS.onPrimary} />
+                ) : (
+                  <Ionicons name="arrow-forward" size={16} color={COLORS.onPrimary} />
+                )}
               </View>
             </TouchableOpacity>
           </View>
@@ -179,6 +227,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginBottom: SPACING.md,
   },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(186, 26, 26, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(186, 26, 26, 0.3)',
+    borderRadius: BORDER_RADIUS.md,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 10,
+    marginBottom: SPACING.sm,
+    gap: 8,
+  },
+  errorText: {
+    color: COLORS.error || '#BA1A1A',
+    fontSize: 12,
+    flex: 1,
+    lineHeight: 16,
+  },
   inputLabelContainer: {
     marginTop: SPACING.xs + 4,
     marginBottom: 6,
@@ -198,6 +264,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.surfaceContainer,
     height: 48,
+  },
+  inputError: {
+    borderColor: 'rgba(186, 26, 26, 0.5)',
   },
   inputIcon: {
     marginRight: SPACING.xs,
@@ -237,6 +306,9 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 3,
     marginTop: SPACING.xs,
+  },
+  loginBtnDisabled: {
+    opacity: 0.7,
   },
   loginBtnText: {
     color: COLORS.onPrimaryContainer,

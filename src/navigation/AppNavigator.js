@@ -1,8 +1,10 @@
 import React from "react";
+import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../constants/theme";
+import { useAuth } from "../context/AuthContext";
 
 import SplashScreen from "../screens/SplashScreen";
 import LoginScreen from "../screens/LoginScreen";
@@ -15,6 +17,7 @@ import PlayerScreen from "../screens/PlayerScreen";
 import ArtistDetailsScreen from "../screens/ArtistDetailsScreen";
 import SearchScreen from "../screens/SearchScreen";
 import FavouriteScreen from "../screens/FavouriteScreen";
+import ProfileScreen from "../screens/ProfileScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -34,7 +37,6 @@ function BottomTabs() {
           } else if (route.name === "Settings") {
             iconName = focused ? "settings" : "settings-outline";
           }
-
           return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: COLORS.primary,
@@ -58,7 +60,23 @@ function BottomTabs() {
   );
 }
 
+// Full-screen loader shown while AuthContext resolves the initial session
+function AuthLoadingScreen() {
+  return (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color={COLORS.primary} />
+    </View>
+  );
+}
+
 export default function AppNavigator() {
+  const { loading } = useAuth();
+
+  // Block rendering until we know the auth state — prevents Splash flicker
+  if (loading) {
+    return <AuthLoadingScreen />;
+  }
+
   return (
     <Stack.Navigator initialRouteName="Splash">
       <Stack.Screen
@@ -82,12 +100,17 @@ export default function AppNavigator() {
         options={{ headerShown: false }}
       />
       <Stack.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
         name="Player"
         component={PlayerScreen}
         options={{
           presentation: "modal",
           headerShown: false,
-          animation: "slide_from_bottom"
+          animation: "slide_from_bottom",
         }}
       />
       <Stack.Screen
@@ -108,3 +131,12 @@ export default function AppNavigator() {
     </Stack.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});
